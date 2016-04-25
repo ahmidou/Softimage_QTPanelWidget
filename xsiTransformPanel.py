@@ -14,6 +14,7 @@ class XYZLineEdit(QtGui.QLineEdit):
         if event.reason() != QtCore.Qt.PopupFocusReason:
             self._before = self.text()
         super(XYZLineEdit, self).focusInEvent(event)
+        self.selectAll()
 
     def focusOutEvent(self, event):
         self.validate()
@@ -27,8 +28,10 @@ class XYZLineEdit(QtGui.QLineEdit):
             super(XYZLineEdit, self).keyPressEvent(e)
 
     def mousePressEvent(self, e, Parent=None):
+        self.deselect()
         super(XYZLineEdit, self).mousePressEvent(e) #required to deselect on 2e click
-        self.selectAll()
+
+        
 
     def validate(self):
         state = self.validator.validate(self.text(), 0)[0]
