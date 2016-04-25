@@ -87,9 +87,8 @@ class TooglableMenuButton (QtGui.QPushButton):
     def menuButton_onClicked(self, point):
         # set the menu position on the button's left side
         sender = self.sender()
-        geo = self.geometry()
         globalPos = sender.mapToGlobal(QPoint(0 , 0))
-        pos = QPoint(globalPos.x() - self.menu.geometry().width(), globalPos.y())
+        pos = QPoint(globalPos.x() - self.menu.sizeHint().width(), globalPos.y())
         self.menu.exec_(pos)
 
     def setMenu(self, menu):
