@@ -4,6 +4,7 @@ from PySide.QtGui import *
 
 import re
 import math
+import inspect, os
 from simpleEval import simple_eval
 
 
@@ -197,6 +198,8 @@ class XsiTransformPanel(QWidget):
         self.name = name
         self.setObjectName('XsiTransformPanel_uniqueId')        
         self.setWindowTitle('XsiTransformPanel')        
+        self.iconPath = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
+        print self.iconPath
 
         self.selChangeID = None
         self.srtUpdaterID = None
@@ -328,11 +331,11 @@ class XsiTransformPanel(QWidget):
         self.parentButton.setCheckable( True );
         self.addButton = QtGui.QPushButton('Add')
         self.addButton.setCheckable( True );
-        self.refButton = TooglableMenuButton("E:/XSI_DEV/MAYA/python/xsiPanel/leftTopArrow.png", self.refMenu, 'Ref')
+        self.refButton = TooglableMenuButton(os.path.join(self.iconPath,"leftTopArrow.png"), self.refMenu, 'Ref')
         self.refButton.setObjectName('Ref')
         self.refButton.setCheckable( True )
 
-        self.planeButton = TooglableMenuButton("E:/XSI_DEV/MAYA/python/xsiPanel/leftTopArrow.png", self.refMenu, 'Plane')
+        self.planeButton = TooglableMenuButton(os.path.join(self.iconPath,"leftTopArrow.png"), self.refMenu, 'Plane')
         self.planeButton.setObjectName('Plane')
         self.planeButton.setCheckable( True );
 
@@ -354,7 +357,7 @@ class XsiTransformPanel(QWidget):
         self.cogButton.setCheckable( True );
         self.proportionalButton = QtGui.QPushButton('Prop')
         self.proportionalButton.setCheckable( True );
-        self.symmetryButton = TooglableMenuButton("E:/XSI_DEV/MAYA/python/xsiPanel/leftTopArrow.png", self.symMenu, 'Sym')
+        self.symmetryButton = TooglableMenuButton(os.path.join(self.iconPath,"leftTopArrow.png"), self.symMenu, 'Sym')
         self.symmetryButton.setCheckable( True );
 
         SRTgrid = QtGui.QGridLayout()
