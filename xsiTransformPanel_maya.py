@@ -24,42 +24,42 @@ class XsiTransformPanel_Maya(XsiTransformPanel):
         QtGui.QWidget.closeEvent(self, event)
 
     def updateSRT(self, msg, mplug, otherMplug, clientData):
-        #print msg
+        # print msg
         if msg == 2056:            
             nodeName, attrName = mplug.name().split('.')
 
             if attrName == "translate":
-                self.translateWidget.X.setText(str(mplug.child(0).asFloat()))
-                self.translateWidget.Y.setText(str(mplug.child(1).asFloat()))
-                self.translateWidget.Z.setText(str(mplug.child(2).asFloat()))
+                self.translateWidget.X.set(mplug.child(0).asFloat())
+                self.translateWidget.Y.set(mplug.child(1).asFloat())
+                self.translateWidget.Z.set(mplug.child(2).asFloat())
 
             elif attrName == "rotate":
-                self.rotateWidget.X.setText(str(math.degrees(mplug.child(0).asFloat())))
-                self.rotateWidget.Y.setText(str(math.degrees(mplug.child(1).asFloat())))
-                self.rotateWidget.Z.setText(str(math.degrees(mplug.child(2).asFloat())))
+                self.rotateWidget.X.set(mplug.child(0).asFloat(), True)
+                self.rotateWidget.Y.set(mplug.child(1).asFloat(), True)
+                self.rotateWidget.Z.set(mplug.child(2).asFloat(), True)
 
             elif attrName == "scale":
-                self.scaleWidget.X.setText(str(mplug.child(0).asFloat()))
-                self.scaleWidget.Y.setText(str(mplug.child(1).asFloat()))
-                self.scaleWidget.Z.setText(str(mplug.child(2).asFloat()))
+                self.scaleWidget.X.set(mplug.child(0).asFloat())
+                self.scaleWidget.Y.set(mplug.child(1).asFloat())
+                self.scaleWidget.Z.set(mplug.child(2).asFloat())
             elif attrName == "translateX":
-                self.translateWidget.X.setText(str(mplug.asFloat()))
+                self.translateWidget.X.set(mplug.asFloat())
             elif attrName == "translateY":
-                self.translateWidget.Y.setText(str(mplug.asFloat()))
+                self.translateWidget.Y.set(mplug.asFloat())
             elif attrName == "translateZ":
-                self.translateWidget.Z.setText(str(mplug.asFloat()))
+                self.translateWidget.Z.set(mplug.asFloat())
             elif attrName == "rotateX":
-                self.rotateWidget.X.setText(str(math.degrees(mplug.asFloat())))
+                self.rotateWidget.X.set(math.degrees(mplug.asFloat()))
             elif attrName == "rotateY":
-                self.rotateWidget.Y.setText(str(math.degrees(mplug.asFloat())))
+                self.rotateWidget.Y.set(math.degrees(mplug.asFloat()))
             elif attrName == "rotateZ":
-                self.rotateWidget.Z.setText(str(math.degrees(mplug.asFloat())))
+                self.rotateWidget.Z.set(math.degrees(mplug.asFloat()))
             elif attrName == "scaleX":
-                self.scaleWidget.X.setText(str(mplug.asFloat()))
+                self.scaleWidget.X.set(mplug.asFloat())
             elif attrName == "scaleY":
-                self.scaleWidget.Y.setText(str(mplug.asFloat()))
+                self.scaleWidget.Y.set(mplug.asFloat())
             elif attrName == "scaleZ":
-                self.scaleWidget.Z.setText(str(mplug.asFloat()))
+                self.scaleWidget.Z.set(mplug.asFloat())
 
     def setSRT(self):
         self.translateWidget.X.setText("")
@@ -73,11 +73,11 @@ class XsiTransformPanel_Maya(XsiTransformPanel):
         self.scaleWidget.Z.setText("")
 
     def updateSelection(self, *args, **kwargs):
-        #TODO: handle multi selection (pass index to client data)
+        # TODO: handle multi selection (pass index to client data)
         selectionList = om.MGlobal.getActiveSelectionList()
-        #iterator = OpenMaya.MItSelectionList( selectionList, OpenMaya.MFn.kDagNode )
+        # iterator = OpenMaya.MItSelectionList( selectionList, OpenMaya.MFn.kDagNode )
 
-        #clean previous selection callback
+        # clean previous selection callback
         if self.selectionList:
             ids = om.MMessage.nodeCallbacks(self.selectionList)
             if self.srtUpdaterID is not None and self.srtUpdaterID in ids:

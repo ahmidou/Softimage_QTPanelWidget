@@ -1,16 +1,23 @@
+from PySide import QtGui, QtCore
+from PySide.QtCore import * 
+from PySide.QtGui import *
+
 import re
+import math
 from simpleEval import simple_eval
+
 
 class XYZLineEdit(QtGui.QLineEdit):
     def __init__(self, contents='', parent=None):
         super(XYZLineEdit, self).__init__(contents, parent)
         self.returnPressed.connect(self.validate)
         self._before = contents
+        self.value = 0.0
         regexp = QtCore.QRegExp('^[\d\(\)\+\-\*\/\.]*$')
         self.validator = QRegExpValidator(regexp)
 
     def focusInEvent(self, event):
-        #self.selectAll()
+        # self.selectAll()
         if event.reason() != QtCore.Qt.PopupFocusReason:
             self._before = self.text()
         super(XYZLineEdit, self).focusInEvent(event)
@@ -22,33 +29,40 @@ class XYZLineEdit(QtGui.QLineEdit):
 
     def keyPressEvent(self, e):
         if e.key() == QtCore.Qt.Key_Escape:
-            self.setText(self._before)
+            self.setText(str(self._before))
             self.clearFocus()
         else:
             super(XYZLineEdit, self).keyPressEvent(e)
 
     def mousePressEvent(self, e, Parent=None):
         self.deselect()
-        super(XYZLineEdit, self).mousePressEvent(e) #required to deselect on 2e click
-
-        
+        # required to deselect on 2e click
+        super(XYZLineEdit, self).mousePressEvent(e)
 
     def validate(self):
         state = self.validator.validate(self.text(), 0)[0]
         if state == QtGui.QValidator.Acceptable:
             try:
-                exp=simple_eval(self.text())
-                self.setText( str(exp))
-                self._before = str(exp)
+                exp = simple_eval(self.text())
+                self.setText(str(exp))
+                self._before = exp
                 self.clearFocus()
             except:
-                self.setText(self._before)
+                self.setText(str(self._before))
                 self.clearFocus()
         elif state == QtGui.QValidator.Invalid:
-            self.setText(self._before)
+            self.setText(str(self._before))
+
+    def set(self, val, isRadian=False):
+        if isRadian:
+            self.value = math.degrees(val)
+        else:
+            self.value = val
+        self.setText(str(round(self.value, 3)))
+
 
 class TooglableMenuButton (QtGui.QPushButton):
-    def __init__ (self, path, menu, parent = None):
+    def __init__ (self, path, menu, parent=None):
         QtGui.QPushButton.__init__(self, parent)
         self.pixmap = QPixmap(path)
         self.menu = menu
@@ -56,6 +70,8 @@ class TooglableMenuButton (QtGui.QPushButton):
         self.customContextMenuRequested.connect(self.menuButton_onClicked)
 
     def paintEvent (self, event):
+        #Draw the corner arrow
+        #
         QtGui.QPushButton.paintEvent(self, event)
 
         style = self.style()
@@ -65,21 +81,19 @@ class TooglableMenuButton (QtGui.QPushButton):
         p = QtGui.QPainter(self)
 
         if not self.pixmap.isNull():
-            style.drawItemPixmap(p, self.rect(), Qt.AlignLeft|Qt.AlignTop, self.pixmap);
+            style.drawItemPixmap(p, self.rect(), Qt.AlignLeft|Qt.AlignTop, self.pixmap)
 
     def menuButton_onClicked(self, point):
+        # set the menu position on the button's left side
         sender = self.sender()
         geo = self.geometry()
-        print point
-        pos = sender.mapToGlobal(point)
-        print geo, pos
-        self.menu.exec_(QPoint(pos.x()-geo.width()-self.menu.geometry().width(), pos.y()))
+        globalPos = sender.mapToGlobal(QPoint(0 , 0))
+        pos = QPoint(globalPos.x() - self.menu.geometry().width(), globalPos.y())
+        self.menu.exec_(pos)
 
     def setMenu(self, menu):
         QtGui.QPushButton.setMenu(self, menu)
         menu.installEventFilter(self)
-
-
 
 
 class TransformElement(QWidget):    
@@ -222,21 +236,50 @@ class XsiTransformPanel(QWidget):
 
     def createMenus(self):
         self.mainMenu = QMenu('TransformMenu')
+        self.mainMenu.setObjectName('TransformMenu')
         self.mainMenu.setTearOffEnabled(True)
         self.mainMenu.addAction((QtGui.QAction('test0', self)))
+        self.mainMenu.setStyleSheet("QMenu::tearoff {height: 8px;} QMenu::tearoff:selected{ background-color: dimgray}")
         for action in self.Menuactions:
             self.mainMenu.addAction(self.Menuactions[action])
         self.mainMenu.setLayoutDirection(Qt.LeftToRight)
         self.mainButton.setMenu (self.mainMenu)     
         
         self.refMenu = QMenu('RefMenu')
-        self.refMenu.setTearOffEnabled(True)
+        self.refMenu.addAction((QtGui.QAction('Use Current Reference', self)))
+        self.refMenu.addAction((QtGui.QAction('Pick New Reference', self)))
+        self.refMenu.addSeparator()
 
-        self.refMenu.addAction((QtGui.QAction('test0', self)))
-        self.refMenu.addAction((QtGui.QAction('test1', self)))
-        self.refMenu.addAction((QtGui.QAction('test2', self)))
-        self.refMenu.addAction((QtGui.QAction('test3', self)))
+        self.refMenu.addAction((QtGui.QAction('Pick Object Reference', self)))
+        self.refMenu.addAction((QtGui.QAction('Pick Point Reference', self)))
+        self.refMenu.addAction((QtGui.QAction('Pick Edge Reference', self)))
+        self.refMenu.addAction((QtGui.QAction('Pick Face Reference', self)))
+        self.refMenu.addSeparator()
 
+        ag = QtGui.QActionGroup(self, exclusive=True)
+        a = ag.addAction((QtGui.QAction('View', self, checkable=True)))
+        self.refMenu.addAction(a)
+        a = ag.addAction((QtGui.QAction('XY', self, checkable=True)))
+        self.refMenu.addAction(a)
+        a = ag.addAction((QtGui.QAction('XZ', self, checkable=True)))
+        self.refMenu.addAction(a)
+        a = ag.addAction((QtGui.QAction('YZ', self, checkable=True)))
+        self.refMenu.addAction(a)
+        self.refMenu.addSeparator()
+
+        self.refMenu.addAction((QtGui.QAction('Reference Properties..', self)))
+
+        self.symMenu = QMenu('SymMenu')
+        ag = QtGui.QActionGroup(self, exclusive=True)
+        a = ag.addAction((QtGui.QAction('YZ', self, checkable=True)))
+        self.symMenu.addAction(a)
+        a = ag.addAction((QtGui.QAction('XZ', self, checkable=True)))
+        self.symMenu.addAction(a)
+        a = ag.addAction((QtGui.QAction('XY', self, checkable=True)))
+        self.symMenu.addAction(a)
+        self.symMenu.addSeparator()
+
+        self.symMenu.addAction((QtGui.QAction('Symmetry Properties..', self)))
 
         
     def initUI(self):
@@ -289,7 +332,7 @@ class XsiTransformPanel(QWidget):
         self.refButton.setObjectName('Ref')
         self.refButton.setCheckable( True )
 
-        self.planeButton = TooglableMenuButton("E:/XSI_DEV/MAYA/python/xsiPanel/leftTopArrow.png", 'Plane')
+        self.planeButton = TooglableMenuButton("E:/XSI_DEV/MAYA/python/xsiPanel/leftTopArrow.png", self.refMenu, 'Plane')
         self.planeButton.setObjectName('Plane')
         self.planeButton.setCheckable( True );
 
@@ -311,10 +354,8 @@ class XsiTransformPanel(QWidget):
         self.cogButton.setCheckable( True );
         self.proportionalButton = QtGui.QPushButton('Prop')
         self.proportionalButton.setCheckable( True );
-        self.symmetryButton = TooglableMenuButton("E:/XSI_DEV/MAYA/python/xsiPanel/leftTopArrow.png", self.refMenu, 'Sym')
+        self.symmetryButton = TooglableMenuButton("E:/XSI_DEV/MAYA/python/xsiPanel/leftTopArrow.png", self.symMenu, 'Sym')
         self.symmetryButton.setCheckable( True );
-
-        self.symmetryButton.setStyleSheet("QPushButton::menu-indicator {subcontrol-position: left bottom}")
 
         SRTgrid = QtGui.QGridLayout()
         SRTgrid.setSpacing(0)
