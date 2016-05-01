@@ -3,6 +3,9 @@ from PySide.QtCore import *
 from PySide.QtGui import *
 
 from xsiMenuButton import TooglableMenuButton
+import xsiPanelHost
+reload(xsiPanelHost)
+from xsiPanelHost import XsiPanelHost
 
 import re
 import math
@@ -11,10 +14,11 @@ from simpleEval import simple_eval
 
 
 class XYZLineEdit(QtGui.QLineEdit):
-    def __init__(self, contents='', parent=None):
+    def __init__(self, contents='', parent=None, name=''):
         super(XYZLineEdit, self).__init__(contents, parent)
         self.returnPressed.connect(self.validate)
         self._before = contents
+        self.name = name
         self.value = 0.0
         regexp = QtCore.QRegExp('^[\d\(\)\+\-\*\/\.]*$')
         self.validator = QRegExpValidator(regexp)
@@ -43,6 +47,7 @@ class XYZLineEdit(QtGui.QLineEdit):
         super(XYZLineEdit, self).mousePressEvent(e)
 
     def validate(self):
+    	print self.parent().name+self.name
         state = self.validator.validate(self.text(), 0)[0]
         if state == QtGui.QValidator.Acceptable:
             try:
@@ -50,6 +55,8 @@ class XYZLineEdit(QtGui.QLineEdit):
                 self.setText(str(exp))
                 self._before = exp
                 self.clearFocus()
+                self.parent().parent().updateParam(self.parent().name+self.name, exp)
+                
             except:
                 self.setText(str(self._before))
                 self.clearFocus()
@@ -78,9 +85,9 @@ class TransformElement(QWidget):
 
         regexp = QtCore.QRegExp('^[\d\(\)\+\-\*\/\.]*$')
         self.validator = QRegExpValidator(regexp)
-        self.X = XYZLineEdit(self)
-        self.Y = XYZLineEdit(self)
-        self.Z = XYZLineEdit(self)  
+        self.X = XYZLineEdit('', self, 'X')
+        self.Y = XYZLineEdit('', self, 'Y')
+        self.Z = XYZLineEdit('', self, 'Z')  
 
         self.XButton = QPushButton('X', self)
         self.XButton.setObjectName('X')
@@ -153,30 +160,16 @@ class TransformElement(QWidget):
                 b.setChecked(False)"""
 
 
-class XsiTransformPanel(QWidget):    
+class XsiTransformPanel(XsiPanelHost):    
     def __init__(self, name, parent, *args, **kwargs):        
-        super(XsiTransformPanel, self).__init__(*args, **kwargs)
+        super(XsiTransformPanel, self).__init__(name, parent, *args, **kwargs)
 
         #Parent widget under Maya main window        
         self.setParent(parent)        
         self.setWindowFlags(Qt.Window)   
         
-        #Set the object name     
-        self.name = name
-        self.setObjectName('XsiTransformPanel_uniqueId')        
-        self.setWindowTitle('XsiTransformPanel')        
-        self.iconPath = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
-        print self.iconPath
-
-        self.selChangeID = None
         self.srtUpdaterID = None
         self.selectionList = None
-        
-        self.Menuactions = {}
-        self.initHost()
-        self.populateMenu()   
-        self.initUI()
-        self.updateSelection()
 
     def closeEvent(self, event):
         QtGui.QWidget.closeEvent(self, event)
@@ -192,6 +185,9 @@ class XsiTransformPanel(QWidget):
 
     def updateSelection(self, *args, **kwargs):
         pass
+
+    def updateParam(self, name, value):
+    	print "updateParam"
 
     def clearSRT(self):
         self.translateWidget.X.setText("")
@@ -264,21 +260,21 @@ class XsiTransformPanel(QWidget):
         self.scaleButton.setObjectName('S')
         self.scaleButton.setCheckable( True );
         self.scaleButton.setStyleSheet("QPushButton#S {background-color: dimgray; min-width: 0.5em; min-height: 1.5em; border-radius: 12px; font-weight: bold; font-size: 10pt;} QPushButton#S:checked {background-color: darkgray;}");
-        self.scaleWidget = TransformElement('Scale', self)
+        self.scaleWidget = TransformElement('scale', self)
         self.scaleButton.clicked.connect(self.SRT_onClicked) 
 
         self.rotateButton = QtGui.QPushButton('R')
         self.rotateButton.setObjectName('R')
         self.rotateButton.setStyleSheet("QPushButton#R {background-color: dimgray; min-width: 1.2em; min-height: 1.5em; border-radius: 12px; font-weight: bold; font-size: 10pt;} QPushButton#R:checked {background-color: darkgray;}");
         self.rotateButton.setCheckable( True );
-        self.rotateWidget = TransformElement('Rotate', self)
+        self.rotateWidget = TransformElement('rotate', self)
         self.rotateButton.clicked.connect(self.SRT_onClicked) 
 
         self.translateButton = QtGui.QPushButton('T')
         self.translateButton.setObjectName('T')
         self.translateButton.setStyleSheet("QPushButton#T {background-color: dimgray; min-width: 1.2em; min-height: 1.5em; border-radius: 12px; font-weight: bold; font-size: 10pt;} QPushButton#T:checked {background-color: darkgray;}");
         self.translateButton.setCheckable( True );
-        self.translateWidget = TransformElement('Translate', self)
+        self.translateWidget = TransformElement('translate', self)
         self.translateButton.clicked.connect(self.SRT_onClicked) 
 
         self.SRTgroup = QtGui.QButtonGroup()

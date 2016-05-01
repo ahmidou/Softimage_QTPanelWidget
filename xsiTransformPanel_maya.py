@@ -8,8 +8,10 @@ from shiboken import wrapInstance
 import maya.api.OpenMaya as om
 
 import math
-
+import xsiTransformPanel
+reload(xsiTransformPanel)
 from xsiTransformPanel import XsiTransformPanel
+
 
 class XsiTransformPanel_Maya(XsiTransformPanel):    
     def __init__(self, name, parent, *args, **kwargs):        
@@ -22,6 +24,26 @@ class XsiTransformPanel_Maya(XsiTransformPanel):
         om.MMessage.removeCallback(self.selChangeID)
         om.MMessage.removeCallback(self.srtUpdaterID)
         QtGui.QWidget.closeEvent(self, event)
+
+    def updateParam(self, name, value):
+        if name == "translateX":
+            om.MFnDependencyNode(self.selectionList).findPlug("translateX", True).setFloat(value)
+        elif name == "translateY":
+            om.MFnDependencyNode(self.selectionList).findPlug("translateY", True).setFloat(value)
+        elif name == "translateZ":
+            om.MFnDependencyNode(self.selectionList).findPlug("translateZ", True).setFloat(value)
+        elif name == "rotateX":
+            om.MFnDependencyNode(self.selectionList).findPlug("rotateX", True).setFloat(math.radians(value))
+        elif name == "rotateY":
+            om.MFnDependencyNode(self.selectionList).findPlug("rotateY", True).setFloat(math.radians(value))
+        elif name == "rotateZ":
+            om.MFnDependencyNode(self.selectionList).findPlug("rotateZ", True).setFloat(math.radians(value))
+        elif name == "scaleX":
+            om.MFnDependencyNode(self.selectionList).findPlug("scaleX", True).setFloat(value)
+        elif name == "scaleY":
+            om.MFnDependencyNode(self.selectionList).findPlug("scaleY", True).setFloat(value)
+        elif name == "scaleZ":
+            om.MFnDependencyNode(self.selectionList).findPlug("scaleZ", True).setFloat(value)
 
     def updateSRT(self, msg, mplug, otherMplug, clientData):
         # print msg
@@ -61,18 +83,19 @@ class XsiTransformPanel_Maya(XsiTransformPanel):
             elif attrName == "scaleZ":
                 self.scaleWidget.Z.set(mplug.asFloat())
 
-    def setSRT(self):
-        self.translateWidget.X.setText("")
-        self.translateWidget.Y.setText("")
-        self.translateWidget.Z.setText("")
-        self.rotateWidget.X.setText("")
-        self.rotateWidget.Y.setText("")
-        self.rotateWidget.Z.setText("")
-        self.scaleWidget.X.setText("")
-        self.scaleWidget.Y.setText("")
-        self.scaleWidget.Z.setText("")
+    def setSRT(self, selectionList):
+        self.translateWidget.X.setText(str(om.MFnDependencyNode(selectionList).findPlug("translateX", True).asFloat()))
+        self.translateWidget.Y.setText(str(om.MFnDependencyNode(selectionList).findPlug("translateY", True).asFloat()))
+        self.translateWidget.Z.setText(str(om.MFnDependencyNode(selectionList).findPlug("translateZ", True).asFloat()))
+        self.rotateWidget.X.setText(str(om.MFnDependencyNode(selectionList).findPlug("rotateX", True).asFloat()))
+        self.rotateWidget.Y.setText(str(om.MFnDependencyNode(selectionList).findPlug("rotateY", True).asFloat()))
+        self.rotateWidget.Z.setText(str(om.MFnDependencyNode(selectionList).findPlug("rotateZ", True).asFloat()))
+        self.scaleWidget.X.setText(str(om.MFnDependencyNode(selectionList).findPlug("scaleX", True).asFloat()))
+        self.scaleWidget.Y.setText(str(om.MFnDependencyNode(selectionList).findPlug("scaleY", True).asFloat()))
+        self.scaleWidget.Z.setText(str(om.MFnDependencyNode(selectionList).findPlug("scaleZ", True).asFloat()))
 
     def updateSelection(self, *args, **kwargs):
+        #print "BEUUUUUP"
         # TODO: handle multi selection (pass index to client data)
         selectionList = om.MGlobal.getActiveSelectionList()
         # iterator = OpenMaya.MItSelectionList( selectionList, OpenMaya.MFn.kDagNode )
@@ -87,7 +110,7 @@ class XsiTransformPanel_Maya(XsiTransformPanel):
             self.selectionList = selectionList.getDependNode(0)
             clientData = None
             self.srtUpdaterID = om.MNodeMessage.addAttributeChangedCallback(self.selectionList, self.updateSRT, clientData)
-            self.setSRT()
+            self.setSRT(self.selectionList)
         else:
             self.clearSRT()
 
