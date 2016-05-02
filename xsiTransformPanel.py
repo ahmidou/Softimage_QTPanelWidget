@@ -168,6 +168,7 @@ class XsiTransformPanel(XsiPanelHost):
         self.setParent(parent)        
         self.setWindowFlags(Qt.Window)   
         
+        self.a = True
         self.srtUpdaterID = None
         self.selectionList = None
 
@@ -369,6 +370,10 @@ class XsiTransformPanel(XsiPanelHost):
                 w.YButton.setChecked(False)
                 w.ZButton.setChecked(False)
 
+    def setManipTool(self, type):
+    	pass
+
+
     def SRT_onClicked(self):        
         button = self.sender()
         widget = None
@@ -380,6 +385,8 @@ class XsiTransformPanel(XsiPanelHost):
             self.parentButton.setEnabled(False)
             self.addButton.setEnabled(False)
             self.refButton.setEnabled(False)
+            if self.a:
+            	self.setManipTool("scale")
         elif button.text() == 'R':
             widget = self.rotateWidget
             self.volumeButton.hide()
@@ -390,18 +397,26 @@ class XsiTransformPanel(XsiPanelHost):
             self.addButton.setEnabled(True)
             self.parentButton.setEnabled(True)
             self.refButton.setEnabled(True)
+            if self.a:
+            	self.setManipTool("rotate")
         elif button.text() == 'T':
+            widget = self.translateWidget
             self.volumeButton.hide()
             self.planeButton.show()
             self.addButton.hide()
             self.parentButton.show()
-            widget = self.translateWidget
             self.globalButton.setEnabled(True)
             self.addButton.setEnabled(True)
             self.parentButton.setEnabled(True)
             self.refButton.setEnabled(True)
-
+            if self.a:
+            	self.setManipTool("translate")
+        button.setChecked(True)
         self.updateXYZstate(widget)
+        self.a = True
+
+    def setCurrentTool(*args):
+    	pass
 
     def populateMenu(self):       
         action = QAction("&Reset All Transforms", self)

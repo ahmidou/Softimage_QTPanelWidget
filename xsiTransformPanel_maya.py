@@ -6,6 +6,8 @@ from PySide.QtCore import *
 from PySide.QtGui import * 
 from shiboken import wrapInstance
 import maya.api.OpenMaya as om
+import pymel.core as pm
+
 
 import math
 import xsiTransformPanel
@@ -19,10 +21,12 @@ class XsiTransformPanel_Maya(XsiTransformPanel):
 
     def initHost(self):
         self.selChangeID = om.MEventMessage.addEventCallback('SelectionChanged', self.updateSelection)
+        self.toolChangedID = om.MEventMessage.addEventCallback('ToolChanged', self.getManipTool)
 
     def closeEvent(self, event):
         om.MMessage.removeCallback(self.selChangeID)
         om.MMessage.removeCallback(self.srtUpdaterID)
+        om.MMessage.removeCallback(self.toolChangedID)
         QtGui.QWidget.closeEvent(self, event)
 
     def updateParam(self, name, value):
@@ -95,7 +99,7 @@ class XsiTransformPanel_Maya(XsiTransformPanel):
         self.scaleWidget.Z.setText(str(om.MFnDependencyNode(selectionList).findPlug("scaleZ", True).asFloat()))
 
     def updateSelection(self, *args, **kwargs):
-        #print "BEUUUUUP"
+
         # TODO: handle multi selection (pass index to client data)
         selectionList = om.MGlobal.getActiveSelectionList()
         # iterator = OpenMaya.MItSelectionList( selectionList, OpenMaya.MFn.kDagNode )
@@ -114,8 +118,26 @@ class XsiTransformPanel_Maya(XsiTransformPanel):
         else:
             self.clearSRT()
 
-    
-                           
+
+    def getManipTool(self, *args):
+        if pm.currentCtx() == "moveSuperContext":
+            self.a = False
+            QMetaObject.invokeMethod(self.translateButton, "clicked")
+        elif pm.currentCtx() == "RotateSuperContext":
+            self.a = False
+            QMetaObject.invokeMethod(self.rotateButton, "clicked")
+        elif pm.currentCtx() == "scaleSuperContext":
+            self.a = False
+            QMetaObject.invokeMethod(self.scaleButton, "clicked")
+
+    def setManipTool(self, toolType):
+        if toolType == "translate":
+            pm.setToolTo( 'moveSuperContext' )
+        elif toolType == "rotate":
+            pm.setToolTo( 'RotateSuperContext' )
+        elif toolType == "scale":
+            pm.setToolTo( 'scaleSuperContext' )
+              
 #mayaMainWindowPtr = omui.MQtUtil.mainWindow()
 #mayaMainWindow = wrapInstance(long(mayaMainWindowPtr), QWidget)
 

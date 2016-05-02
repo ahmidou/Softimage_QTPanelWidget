@@ -24,8 +24,8 @@ class XsiPanelHost(QWidget):
         self.selectionList = None
         
         self.Menuactions = {}
-        self.initHost()
         self.initUI()
+        self.initHost()
         self.updateSelection()
 
     def closeEvent(self, event):
