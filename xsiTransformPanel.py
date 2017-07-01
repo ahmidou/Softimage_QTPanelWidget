@@ -24,13 +24,14 @@ class XYZLineEdit(QtWidgets.QLineEdit):
         self.value = 0.0
         regexp = QtCore.QRegExp('^[\d\(\)\+\-\*\/\.]*$')
         self.validator = QRegExpValidator(regexp)
+        self.asDegree = False
+        self.initFocus = False
 
     def focusInEvent(self, event):
-        # self.selectAll()
+        self.initFocus = True
         if event.reason() != QtCore.Qt.PopupFocusReason:
             self._before = self.text()
         super(XYZLineEdit, self).focusInEvent(event)
-        self.selectAll()
 
     def focusOutEvent(self, event):
         self.validate()
@@ -44,11 +45,12 @@ class XYZLineEdit(QtWidgets.QLineEdit):
             super(XYZLineEdit, self).keyPressEvent(e)
 
     def mousePressEvent(self, e, Parent=None):
-        self.deselect()
-        # required to deselect on 2e click
         super(XYZLineEdit, self).mousePressEvent(e)
+        # 1st click
+        if self.initFocus == True:
+            self.selectAll()
+            self.initFocus = False
 
-    #
     def validate(self):
     	print self.parent().name+self.name
         state = self.validator.validate(self.text(), 0)[0]
@@ -58,7 +60,7 @@ class XYZLineEdit(QtWidgets.QLineEdit):
                 self.setValue(exp)
                 self._before = exp
                 self.clearFocus()
-                self.parent().parent().updateParam(self.parent().name+self.name, exp)
+                self.parent().parent().updateClientValues(self.parent().name+self.name, exp)
                 
             except Exception, e:
                 print e
@@ -74,7 +76,7 @@ class XYZLineEdit(QtWidgets.QLineEdit):
                 self.setText("")
 
     def setValue(self, val, isRadian=False):
-        if isRadian:
+        if self.asDegree:
             self.value = math.degrees(val)
         else:
             self.value = val
@@ -193,19 +195,43 @@ class XsiTransformPanel(XsiPanelHost):
     def initHost(self):
         pass
 
-    def updateSRT(self, msg, mplug, otherMplug, clientData):
+    def updateHostValues(self, msg, mplug, otherMplug, clientData):
         pass
 
-    def setSRT(self):
-        pass
+    def setHostValues(self, selectionList, getFunct):
+        srt = [ "translateX","translateY","translateZ",
+                "rotateX","rotateY","rotateZ",
+                "scaleX","scaleY","scaleZ"]
+
+        widgets = [ self.translateWidget.X,
+                    self.translateWidget.Y,
+                    self.translateWidget.Z,
+                    self.rotateWidget.X,
+                    self.rotateWidget.Y,
+                    self.rotateWidget.Z,
+                    self.scaleWidget.X,
+                    self.scaleWidget.Y,
+                    self.scaleWidget.Z]
+
+        srtvals = {}
+        for item in srt:
+            srtvals[item] = set()
+            for node in selectionList:
+                srtvals[item].add(getFunct(node, item))
+
+        for i,j in zip(widgets,srt):
+            if len(srtvals[j]) == 1:
+                i.setValue(srtvals[j].pop())
+            else:
+                i.setText("")
 
     def updateSelection(self, *args, **kwargs):
         pass
 
-    def updateParam(self, name, value):
-    	print "updateParam"
+    def updateClientValues(self, name, value):
+    	print "updateClientValues"
 
-    def clearSRT(self):
+    def clearHostValues(self):
         self.translateWidget.X.setText("")
         self.translateWidget.Y.setText("")
         self.translateWidget.Z.setText("")
@@ -287,6 +313,9 @@ class XsiTransformPanel(XsiPanelHost):
         self.rotateButton.setCheckable( True );
         self.rotateButton.setAutoExclusive(False)
         self.rotateWidget = TransformElement('rotate', self)
+        self.rotateWidget.X.asDegree = True
+        self.rotateWidget.Y.asDegree = True
+        self.rotateWidget.Z.asDegree = True
         self.rotateButton.clicked.connect(self.SRT_stateUpdate) 
 
         self.translateButton = QtWidgets.QPushButton('T')

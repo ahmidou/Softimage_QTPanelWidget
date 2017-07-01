@@ -33,7 +33,7 @@ class XsiTransformPanel_Maya(XsiTransformPanel):
     def setPlugValue(self, node, plug, value):
         return om.MFnDependencyNode(node).findPlug(plug, True).setFloat(value)
 
-    def updateParam(self, name, value):
+    def updateClientValues(self, name, value):
         for node in self.selectionList:
             if name == "translateX":
                 self.setPlugValue(node, "translateX", value)
@@ -54,7 +54,7 @@ class XsiTransformPanel_Maya(XsiTransformPanel):
             elif name == "scaleZ":
                 self.setPlugValue(node, "scaleZ", value)
 
-    def updateSRT(self, msg, mplug, otherMplug, clientData):
+    def updateHostValues(self, msg, mplug, otherMplug, clientData):
         # print msg
         if msg == 2056:            
             nodeName, attrName = mplug.name().split('.')
@@ -65,9 +65,9 @@ class XsiTransformPanel_Maya(XsiTransformPanel):
                 self.translateWidget.Z.setValue(mplug.child(2).asFloat())
 
             elif attrName == "rotate":
-                self.rotateWidget.X.setValue(math.degrees(mplug.child(0).asFloat()), True)
-                self.rotateWidget.Y.setValue(math.degrees(mplug.child(1).asFloat()), True)
-                self.rotateWidget.Z.setValue(math.degrees(mplug.child(2).asFloat()), True)
+                self.rotateWidget.X.setValue(mplug.child(0).asFloat())
+                self.rotateWidget.Y.setValue(mplug.child(1).asFloat())
+                self.rotateWidget.Z.setValue(mplug.child(2).asFloat())
 
             elif attrName == "scale":
                 self.scaleWidget.X.setValue(mplug.child(0).asFloat())
@@ -80,11 +80,11 @@ class XsiTransformPanel_Maya(XsiTransformPanel):
             elif attrName == "translateZ":
                 self.translateWidget.Z.setValue(mplug.asFloat())
             elif attrName == "rotateX":
-                self.rotateWidget.X.setValue(math.degrees(mplug.asFloat()))
+                self.rotateWidget.X.setValue(mplug.asFloat())
             elif attrName == "rotateY":
-                self.rotateWidget.Y.setValue(math.degrees(mplug.asFloat()))
+                self.rotateWidget.Y.setValue(mplug.asFloat())
             elif attrName == "rotateZ":
-                self.rotateWidget.Z.setValue(math.degrees(mplug.asFloat()))
+                self.rotateWidget.Z.setValue(mplug.asFloat())
             elif attrName == "scaleX":
                 self.scaleWidget.X.setValue(mplug.asFloat())
             elif attrName == "scaleY":
@@ -92,26 +92,12 @@ class XsiTransformPanel_Maya(XsiTransformPanel):
             elif attrName == "scaleZ":
                 self.scaleWidget.Z.setValue(mplug.asFloat())
 
-    def getPlugValue(self, node, plug):
-        return om.MFnDependencyNode(node).findPlug(plug, True).asFloat()
+    def getPlugValue(self, *args):
+        return om.MFnDependencyNode(args[0]).findPlug(args[1], True).asFloat()
 
-    def setSRT(self, selectionList):
-        for i in selectionList:
-            self.translateWidget.X.setValue(self.getPlugValue(i, "translateX"))
-            self.translateWidget.Y.setValue(self.getPlugValue(i, "translateY"))
-            self.translateWidget.Z.setValue(self.getPlugValue(i, "translateZ"))
-            self.rotateWidget.X.setValue(math.degrees(self.getPlugValue(i, "rotateX")))
-            self.rotateWidget.Y.setValue(math.degrees(self.getPlugValue(i, "rotateY")))
-            self.rotateWidget.Z.setValue(math.degrees(self.getPlugValue(i, "rotateZ")))
-            self.scaleWidget.X.setValue(self.getPlugValue(i, "scaleX"))
-            self.scaleWidget.Y.setValue(self.getPlugValue(i, "scaleY"))
-            self.scaleWidget.Z.setValue(self.getPlugValue(i, "scaleZ"))
 
     def updateSelection(self, *args, **kwargs):
-
-        # TODO: handle multi selection (pass index to client data)
         selectionList = om.MGlobal.getActiveSelectionList()
-        # iterator = OpenMaya.MItSelectionList( selectionList, OpenMaya.MFn.kDagNode )
 
         # clean previous selection callback
         if len(self.selectionList) > 0:
@@ -127,10 +113,10 @@ class XsiTransformPanel_Maya(XsiTransformPanel):
             for i in range(selectionList.length()):
                 self.selectionList.append(selectionList.getDependNode(i))
                 clientData = i
-                self.srtUpdaterID.append(om.MNodeMessage.addAttributeChangedCallback(self.selectionList[i], self.updateSRT, clientData))
-            self.setSRT(self.selectionList)
+                self.srtUpdaterID.append(om.MNodeMessage.addAttributeChangedCallback(self.selectionList[i], self.updateHostValues, clientData))
+            self.setHostValues(self.selectionList, self.getPlugValue)
         else:
-            self.clearSRT()
+            self.clearHostValues()
             self.SRT_stateUpdate()
             return
 
