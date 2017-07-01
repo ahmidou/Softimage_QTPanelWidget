@@ -1,12 +1,12 @@
-from PySide import QtGui, QtCore
-from PySide.QtCore import * 
-from PySide.QtGui import *
+from Qt import QtGui, QtCore, QtWidgets
+from Qt.QtCore import * 
+from Qt.QtGui import *
 
 import inspect, os
 
 from xsiMenuButton import TooglableMenuButton
 
-class XsiPanelHost(QWidget):    
+class XsiPanelHost(QtWidgets.QWidget):    
     def __init__(self, name, parent, *args, **kwargs):        
         super(XsiPanelHost, self).__init__(*args, **kwargs)
 
@@ -21,7 +21,8 @@ class XsiPanelHost(QWidget):
         self.iconPath = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 
         self.selChangeID = None
-        self.selectionList = None
+        self.selectionList = []
+        self.srtUpdaterID = []
         
         self.Menuactions = {}
         self.initUI()

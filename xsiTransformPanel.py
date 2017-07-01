@@ -1,6 +1,6 @@
-from PySide import QtGui, QtCore
-from PySide.QtCore import * 
-from PySide.QtGui import *
+from Qt import QtGui, QtCore, QtWidgets
+from Qt.QtCore import * 
+from Qt.QtGui import *
 
 from xsiMenuButton import TooglableMenuButton
 import xsiPanelHost
@@ -8,12 +8,14 @@ reload(xsiPanelHost)
 from xsiPanelHost import XsiPanelHost
 
 import re
+import sys
 import math
+import traceback
 import inspect, os
 from simpleEval import simple_eval
 
 
-class XYZLineEdit(QtGui.QLineEdit):
+class XYZLineEdit(QtWidgets.QLineEdit):
     def __init__(self, contents='', parent=None, name=''):
         super(XYZLineEdit, self).__init__(contents, parent)
         self.returnPressed.connect(self.validate)
@@ -46,32 +48,45 @@ class XYZLineEdit(QtGui.QLineEdit):
         # required to deselect on 2e click
         super(XYZLineEdit, self).mousePressEvent(e)
 
+    #
     def validate(self):
     	print self.parent().name+self.name
         state = self.validator.validate(self.text(), 0)[0]
         if state == QtGui.QValidator.Acceptable:
             try:
                 exp = simple_eval(self.text())
-                self.setText(str(exp))
+                self.setValue(exp)
                 self._before = exp
                 self.clearFocus()
                 self.parent().parent().updateParam(self.parent().name+self.name, exp)
                 
-            except:
-                self.setText(str(self._before))
+            except Exception, e:
+                print e
+                exc_info = sys.exc_info()
+                traceback.print_exception(*exc_info)
+                if(self._before != self.text()):
+                    self.setValue(self._before)
                 self.clearFocus()
         elif state == QtGui.QValidator.Invalid:
-            self.setText(str(self._before))
+            try:
+                self.setValue(self._before)
+            except:
+                self.setText("")
 
-    def set(self, val, isRadian=False):
+    def setValue(self, val, isRadian=False):
         if isRadian:
             self.value = math.degrees(val)
         else:
             self.value = val
-        self.setText(str(round(self.value, 3)))
+
+        if type(self.value) != unicode:
+            self.setText(str(round(self.value, 3)))
+        else:
+            self.setText(str(round(float(self.value), 3)))
 
 
-class TransformElement(QWidget):    
+
+class TransformElement(QtWidgets.QWidget):    
     def __init__(self, name, parent, *args, **kwargs):        
         super(TransformElement, self).__init__(*args, **kwargs)
 
@@ -85,32 +100,32 @@ class TransformElement(QWidget):
 
         regexp = QtCore.QRegExp('^[\d\(\)\+\-\*\/\.]*$')
         self.validator = QRegExpValidator(regexp)
-        self.X = XYZLineEdit('', self, 'X')
-        self.Y = XYZLineEdit('', self, 'Y')
-        self.Z = XYZLineEdit('', self, 'Z')  
+        self.X = XYZLineEdit(None, self, 'X')
+        self.Y = XYZLineEdit(None, self, 'Y')
+        self.Z = XYZLineEdit(None, self, 'Z')  
 
-        self.XButton = QPushButton('X', self)
+        self.XButton = QtWidgets.QPushButton('X', self)
         self.XButton.setObjectName('X')
         self.XButton.setCheckable(True)
         self.XButton.setChecked(False)
         self.XButton.setStyleSheet("QPushButton#X {background-color: dimgray; min-width: 1.5em; min-height: 1.5em; border-radius: 4px;} QPushButton#X:checked {background-color: Crimson;}");
         self.XButton.clicked.connect(self.button_onClicked) 
      
-        self.YButton = QPushButton('Y', self)
+        self.YButton = QtWidgets.QPushButton('Y', self)
         self.YButton.setObjectName('Y')
         self.YButton.setCheckable(True)
         self.YButton.setChecked(False)
         self.YButton.setStyleSheet("QPushButton#Y {background-color: dimgray; min-width: 1.5em; min-height: 1.5em; border-radius: 4px;} QPushButton#Y:checked {background-color: SpringGreen ;}");
         self.YButton.clicked.connect(self.button_onClicked) 
 
-        self.ZButton = QPushButton('Z', self)
+        self.ZButton = QtWidgets.QPushButton('Z', self)
         self.ZButton.setObjectName('Z')
         self.ZButton.setCheckable(True)
         self.ZButton.setChecked(False)
         self.ZButton.setStyleSheet("QPushButton#Z {background-color: dimgray; min-width: 1.5em; min-height: 1.5em; border-radius: 4px;} QPushButton#Z:checked {background-color: DodgerBlue ;}");
         self.ZButton.clicked.connect(self.button_onClicked) 
 
-        self.grid = QtGui.QGridLayout()
+        self.grid = QtWidgets.QGridLayout()
         self.grid.setSpacing(1)
         self.grid.setContentsMargins(2,2,2,2)
         self.grid.addWidget(self.X, 1, 0)
@@ -124,27 +139,19 @@ class TransformElement(QWidget):
 
     def button_onClicked(self):
         parent = self.parent()
-        #srt = [parent.scaleButton, ]
-        #print self.parent()
         self.xIsChecked = self.XButton.isChecked()
         self.yIsChecked = self.YButton.isChecked()
         self.zIsChecked = self.ZButton.isChecked()
-        #buttons = set([self.XButton, self.YButton, self.ZButton])
-        #button = self.sender()
-       # buttons.remove(button)
-        #axis = button.text()
-        #print button == self.XButton
-        #button.setChecked(!button.is)
 
-        if self.name == 'Scale':
+        if self.name == 'scale':
             parent.updateXYZstate(parent.scaleWidget)
-            parent.scaleButton.setChecked(True)
-        elif self.name == 'Rotate':
+            QMetaObject.invokeMethod(parent.scaleButton, "clicked")
+        elif self.name == 'rotate':
             parent.updateXYZstate(parent.rotateWidget)
-            parent.rotateButton.setChecked(True)
-        elif self.name == 'Translate':
+            QMetaObject.invokeMethod(parent.rotateButton, "clicked")
+        elif self.name == 'translate':
             parent.updateXYZstate(parent.translateWidget)
-            parent.translateButton.setChecked(True)
+            QMetaObject.invokeMethod(parent.translateButton, "clicked")
 
         #modifiers = QtGui.QApplication.keyboardModifiers()
 
@@ -168,12 +175,20 @@ class XsiTransformPanel(XsiPanelHost):
         self.setParent(parent)        
         self.setWindowFlags(Qt.Window)   
         
-        self.a = True
-        self.srtUpdaterID = None
-        self.selectionList = None
+        self.updateHostState = True
+        self.srtUpdaterID = []
+        self.currentTool = None
+
+        self.setAttribute(Qt.WA_ShowWithoutActivating)
+
+    def mousePressEvent(self, event):
+        focused_widget = QtWidgets.QApplication.focusWidget()
+        if isinstance(focused_widget, XYZLineEdit):
+            focused_widget.clearFocus()
+        super(XsiTransformPanel, self).mousePressEvent(event)
 
     def closeEvent(self, event):
-        QtGui.QWidget.closeEvent(self, event)
+        QtWidgets.QWidget.closeEvent(self, event)
 
     def initHost(self):
         pass
@@ -202,98 +217,102 @@ class XsiTransformPanel(XsiPanelHost):
         self.scaleWidget.Z.setText("")
 
     def createMenus(self):
-        self.mainMenu = QMenu('TransformMenu')
+        self.mainMenu = QtWidgets.QMenu('TransformMenu')
         self.mainMenu.setObjectName('TransformMenu')
         self.mainMenu.setTearOffEnabled(True)
-        self.mainMenu.addAction((QtGui.QAction('test0', self)))
+        self.mainMenu.addAction((QtWidgets.QAction('test0', self)))
         self.mainMenu.setStyleSheet("QMenu::tearoff {height: 8px;} QMenu::tearoff:selected{ background-color: dimgray}")
         for action in self.Menuactions:
             self.mainMenu.addAction(self.Menuactions[action])
         self.mainMenu.setLayoutDirection(Qt.LeftToRight)
         self.mainButton.setMenu (self.mainMenu)     
         
-        self.refMenu = QMenu('RefMenu')
-        self.refMenu.addAction((QtGui.QAction('Use Current Reference', self)))
-        self.refMenu.addAction((QtGui.QAction('Pick New Reference', self)))
+        self.refMenu = QtWidgets.QMenu('RefMenu')
+        self.refMenu.addAction((QtWidgets.QAction('Use Current Reference', self)))
+        self.refMenu.addAction((QtWidgets.QAction('Pick New Reference', self)))
         self.refMenu.addSeparator()
 
-        self.refMenu.addAction((QtGui.QAction('Pick Object Reference', self)))
-        self.refMenu.addAction((QtGui.QAction('Pick Point Reference', self)))
-        self.refMenu.addAction((QtGui.QAction('Pick Edge Reference', self)))
-        self.refMenu.addAction((QtGui.QAction('Pick Face Reference', self)))
+        self.refMenu.addAction((QtWidgets.QAction('Pick Object Reference', self)))
+        self.refMenu.addAction((QtWidgets.QAction('Pick Point Reference', self)))
+        self.refMenu.addAction((QtWidgets.QAction('Pick Edge Reference', self)))
+        self.refMenu.addAction((QtWidgets.QAction('Pick Face Reference', self)))
         self.refMenu.addSeparator()
 
-        ag = QtGui.QActionGroup(self, exclusive=True)
-        a = ag.addAction((QtGui.QAction('View', self, checkable=True)))
+        ag = QtWidgets.QActionGroup(self, exclusive=True)
+        a = ag.addAction((QtWidgets.QAction('View', self, checkable=True)))
         self.refMenu.addAction(a)
-        a = ag.addAction((QtGui.QAction('XY', self, checkable=True)))
+        a = ag.addAction((QtWidgets.QAction('XY', self, checkable=True)))
         self.refMenu.addAction(a)
-        a = ag.addAction((QtGui.QAction('XZ', self, checkable=True)))
+        a = ag.addAction((QtWidgets.QAction('XZ', self, checkable=True)))
         self.refMenu.addAction(a)
-        a = ag.addAction((QtGui.QAction('YZ', self, checkable=True)))
+        a = ag.addAction((QtWidgets.QAction('YZ', self, checkable=True)))
         self.refMenu.addAction(a)
         self.refMenu.addSeparator()
 
-        self.refMenu.addAction((QtGui.QAction('Reference Properties..', self)))
+        self.refMenu.addAction((QtWidgets.QAction('Reference Properties..', self)))
 
-        self.symMenu = QMenu('SymMenu')
-        ag = QtGui.QActionGroup(self, exclusive=True)
-        a = ag.addAction((QtGui.QAction('YZ', self, checkable=True)))
+        self.symMenu = QtWidgets.QMenu('SymMenu')
+        ag = QtWidgets.QActionGroup(self, exclusive=True)
+        a = ag.addAction((QtWidgets.QAction('YZ', self, checkable=True)))
         self.symMenu.addAction(a)
-        a = ag.addAction((QtGui.QAction('XZ', self, checkable=True)))
+        a = ag.addAction((QtWidgets.QAction('XZ', self, checkable=True)))
         self.symMenu.addAction(a)
-        a = ag.addAction((QtGui.QAction('XY', self, checkable=True)))
+        a = ag.addAction((QtWidgets.QAction('XY', self, checkable=True)))
         self.symMenu.addAction(a)
         self.symMenu.addSeparator()
 
-        self.symMenu.addAction((QtGui.QAction('Symmetry Properties..', self)))
+        self.symMenu.addAction((QtWidgets.QAction('Symmetry Properties..', self)))
 
         
     def initUI(self):
+
         #Create 'Main Menu' button
-        self.mainButton = QPushButton(str(self.name), self)
+        self.mainButton = QtWidgets.QPushButton(str(self.name), self)
         self.mainButton.setObjectName('main')
         self.mainButton.setStyleSheet("QPushButton#main::menu-indicator {subcontrol-position: left bottom; bottom: -4px;}")
 
         self.createMenus()
  
-        self.scaleButton = QtGui.QPushButton('S')
+        self.scaleButton = QtWidgets.QPushButton('S')
         self.scaleButton.setObjectName('S')
         self.scaleButton.setCheckable( True );
+        self.scaleButton.setAutoExclusive(False)
         self.scaleButton.setStyleSheet("QPushButton#S {background-color: dimgray; min-width: 0.5em; min-height: 1.5em; border-radius: 12px; font-weight: bold; font-size: 10pt;} QPushButton#S:checked {background-color: darkgray;}");
         self.scaleWidget = TransformElement('scale', self)
-        self.scaleButton.clicked.connect(self.SRT_onClicked) 
+        self.scaleButton.clicked.connect(self.SRT_stateUpdate) 
 
-        self.rotateButton = QtGui.QPushButton('R')
+        self.rotateButton = QtWidgets.QPushButton('R')
         self.rotateButton.setObjectName('R')
         self.rotateButton.setStyleSheet("QPushButton#R {background-color: dimgray; min-width: 1.2em; min-height: 1.5em; border-radius: 12px; font-weight: bold; font-size: 10pt;} QPushButton#R:checked {background-color: darkgray;}");
         self.rotateButton.setCheckable( True );
+        self.rotateButton.setAutoExclusive(False)
         self.rotateWidget = TransformElement('rotate', self)
-        self.rotateButton.clicked.connect(self.SRT_onClicked) 
+        self.rotateButton.clicked.connect(self.SRT_stateUpdate) 
 
-        self.translateButton = QtGui.QPushButton('T')
+        self.translateButton = QtWidgets.QPushButton('T')
         self.translateButton.setObjectName('T')
         self.translateButton.setStyleSheet("QPushButton#T {background-color: dimgray; min-width: 1.2em; min-height: 1.5em; border-radius: 12px; font-weight: bold; font-size: 10pt;} QPushButton#T:checked {background-color: darkgray;}");
         self.translateButton.setCheckable( True );
+        self.translateButton.setAutoExclusive(False)
         self.translateWidget = TransformElement('translate', self)
-        self.translateButton.clicked.connect(self.SRT_onClicked) 
+        self.translateButton.clicked.connect(self.SRT_stateUpdate) 
 
-        self.SRTgroup = QtGui.QButtonGroup()
+        self.SRTgroup = QtWidgets.QButtonGroup()
         self.SRTgroup.setExclusive(True)
         self.SRTgroup.addButton(self.scaleButton)
         self.SRTgroup.addButton(self.rotateButton)
         self.SRTgroup.addButton(self.translateButton)
 
 
-        self.globalButton = QtGui.QPushButton('Global')
+        self.globalButton = QtWidgets.QPushButton('Global')
         self.globalButton.setCheckable( True );
-        self.localButton = QtGui.QPushButton('Local')
+        self.localButton = QtWidgets.QPushButton('Local')
         self.localButton.setCheckable( True );
-        self.viewButton = QtGui.QPushButton('View')
+        self.viewButton = QtWidgets.QPushButton('View')
         self.viewButton.setCheckable( True );
-        self.parentButton = QtGui.QPushButton('Parent')
+        self.parentButton = QtWidgets.QPushButton('Parent')
         self.parentButton.setCheckable( True );
-        self.addButton = QtGui.QPushButton('Add')
+        self.addButton = QtWidgets.QPushButton('Add')
         self.addButton.setCheckable( True );
         self.refButton = TooglableMenuButton(os.path.join(self.iconPath,"leftTopArrow.png"), self.refMenu, 'Ref')
         self.refButton.setObjectName('Ref')
@@ -303,10 +322,10 @@ class XsiTransformPanel(XsiPanelHost):
         self.planeButton.setObjectName('Plane')
         self.planeButton.setCheckable( True );
 
-        self.volumeButton = QtGui.QPushButton('Vol')
+        self.volumeButton = QtWidgets.QPushButton('Vol')
         self.volumeButton.setCheckable( True );
 
-        self.SRTModegroup = QtGui.QButtonGroup()
+        self.SRTModegroup = QtWidgets.QButtonGroup()
         self.SRTModegroup.setExclusive(True)
         self.SRTModegroup.addButton(self.globalButton)
         self.SRTModegroup.addButton(self.localButton)
@@ -317,14 +336,14 @@ class XsiTransformPanel(XsiPanelHost):
         self.SRTModegroup.addButton(self.planeButton)
         self.SRTModegroup.addButton(self.volumeButton)
 
-        self.cogButton = QtGui.QPushButton('COG')
+        self.cogButton = QtWidgets.QPushButton('COG')
         self.cogButton.setCheckable( True );
-        self.proportionalButton = QtGui.QPushButton('Prop')
+        self.proportionalButton = QtWidgets.QPushButton('Prop')
         self.proportionalButton.setCheckable( True );
         self.symmetryButton = TooglableMenuButton(os.path.join(self.iconPath,"leftTopArrow.png"), self.symMenu, 'Sym')
         self.symmetryButton.setCheckable( True );
 
-        SRTgrid = QtGui.QGridLayout()
+        SRTgrid = QtWidgets.QGridLayout()
         SRTgrid.setSpacing(0)
         SRTgrid.setContentsMargins(2,2,2,2)
         SRTgrid.addWidget(self.scaleButton, 0, 2)
@@ -334,7 +353,7 @@ class XsiTransformPanel(XsiPanelHost):
         SRTgrid.addWidget(self.translateButton, 2, 2)
         SRTgrid.addWidget(self.translateWidget, 2, 0, 1, 2)
         
-        SRToptionsGrid = QtGui.QGridLayout()
+        SRToptionsGrid = QtWidgets.QGridLayout()
         SRToptionsGrid.setSpacing(0)
         SRToptionsGrid.addWidget(self.globalButton, 0, 0)
         SRToptionsGrid.addWidget(self.localButton, 0, 1)
@@ -349,14 +368,15 @@ class XsiTransformPanel(XsiPanelHost):
         SRToptionsGrid.addWidget(self.proportionalButton, 3, 1)
         SRToptionsGrid.addWidget(self.symmetryButton, 3, 2)
 
-        mainGrid = QtGui.QGridLayout()
+        mainGrid = QtWidgets.QGridLayout()
         mainGrid.setSpacing(0)
         mainGrid.setContentsMargins(0,0,0,0)
         mainGrid.addWidget(self.mainButton, 0, 0)
         mainGrid.addLayout(SRTgrid,1,0)
         mainGrid.addLayout(SRToptionsGrid,2,0)
 
-        self.setLayout(mainGrid) 
+        self.setLayout(mainGrid)
+
 
     def updateXYZstate(self, widget):
         widgets = [self.scaleWidget, self.rotateWidget, self.translateWidget]
@@ -374,46 +394,54 @@ class XsiTransformPanel(XsiPanelHost):
     	pass
 
 
-    def SRT_onClicked(self):        
+    def SRT_stateUpdate(self):        
         button = self.sender()
-        widget = None
-        if button.text() == 'S':
-            widget = self.scaleWidget
-            self.volumeButton.show()
-            self.planeButton.hide()
-            self.globalButton.setEnabled(False)
-            self.parentButton.setEnabled(False)
-            self.addButton.setEnabled(False)
-            self.refButton.setEnabled(False)
-            if self.a:
-            	self.setManipTool("scale")
-        elif button.text() == 'R':
-            widget = self.rotateWidget
-            self.volumeButton.hide()
-            self.planeButton.show()
-            self.addButton.show()
-            self.parentButton.hide()
-            self.globalButton.setEnabled(True)
-            self.addButton.setEnabled(True)
-            self.parentButton.setEnabled(True)
-            self.refButton.setEnabled(True)
-            if self.a:
-            	self.setManipTool("rotate")
-        elif button.text() == 'T':
-            widget = self.translateWidget
-            self.volumeButton.hide()
-            self.planeButton.show()
-            self.addButton.hide()
-            self.parentButton.show()
-            self.globalButton.setEnabled(True)
-            self.addButton.setEnabled(True)
-            self.parentButton.setEnabled(True)
-            self.refButton.setEnabled(True)
-            if self.a:
-            	self.setManipTool("translate")
-        button.setChecked(True)
-        self.updateXYZstate(widget)
-        self.a = True
+
+        if button:
+            if button.text() == 'S':
+                self.currentTool = self.scaleWidget
+                self.volumeButton.show()
+                self.planeButton.hide()
+                self.globalButton.setEnabled(False)
+                self.parentButton.setEnabled(False)
+                self.addButton.setEnabled(False)
+                self.refButton.setEnabled(False)
+                if self.updateHostState:
+                	self.setManipTool("scale")
+            elif button.text() == 'R':
+                self.currentTool = self.rotateWidget
+                self.volumeButton.hide()
+                self.planeButton.show()
+                self.addButton.show()
+                self.parentButton.hide()
+                self.globalButton.setEnabled(True)
+                self.addButton.setEnabled(True)
+                self.parentButton.setEnabled(True)
+                self.refButton.setEnabled(True)
+                if self.updateHostState:
+                	self.setManipTool("rotate")
+            elif button.text() == 'T':
+                self.currentTool = self.translateWidget
+                self.volumeButton.hide()
+                self.planeButton.show()
+                self.addButton.hide()
+                self.parentButton.show()
+                self.globalButton.setEnabled(True)
+                self.addButton.setEnabled(True)
+                self.parentButton.setEnabled(True)
+                self.refButton.setEnabled(True)
+                if self.updateHostState:
+                	self.setManipTool("translate")
+            button.setChecked(True)
+        else:
+            self.SRTgroup.setExclusive(False)
+            self.scaleButton.setChecked(False)
+            self.translateButton.setChecked(False)
+            self.rotateButton.setChecked(False)
+            self.SRTgroup.setExclusive(True)
+            self.currentTool = None
+        self.updateXYZstate(self.currentTool)
+        self.updateHostState = True
 
     def setCurrentTool(*args):
     	pass
@@ -426,3 +454,4 @@ class XsiTransformPanel(XsiPanelHost):
 
     def resetAllTransforms(self):
         print "&Reset All Transforms"
+

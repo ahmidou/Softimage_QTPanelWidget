@@ -1,11 +1,11 @@
-from PySide import QtGui, QtCore
-from PySide.QtCore import * 
-from PySide.QtGui import *
+from Qt import QtGui, QtCore, QtWidgets
+from Qt.QtCore import * 
+from Qt.QtGui import *
 
 
-class TooglableMenuButton (QtGui.QPushButton):
+class TooglableMenuButton (QtWidgets.QPushButton):
     def __init__ (self, path, menu, parent=None):
-        QtGui.QPushButton.__init__(self, parent)
+        QtWidgets.QPushButton.__init__(self, parent)
         self.pixmap = QPixmap(path)
         self.menu = menu
         self.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
@@ -14,10 +14,10 @@ class TooglableMenuButton (QtGui.QPushButton):
     def paintEvent (self, event):
         #Draw the corner arrow
         #
-        QtGui.QPushButton.paintEvent(self, event)
+        QtWidgets.QPushButton.paintEvent(self, event)
 
         style = self.style()
-        opt = QStyleOptionButton()
+        opt = QtWidgets.QStyleOptionButton()
         self.initStyleOption(opt)
 
         p = QtGui.QPainter(self)
@@ -33,5 +33,5 @@ class TooglableMenuButton (QtGui.QPushButton):
         self.menu.exec_(pos)
 
     def setMenu(self, menu):
-        QtGui.QPushButton.setMenu(self, menu)
+        QtWidgets.QPushButton.setMenu(self, menu)
         menu.installEventFilter(self)
